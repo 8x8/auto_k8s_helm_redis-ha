@@ -1,0 +1,38 @@
+version: "1.0.0"
+
+buildInfo:
+  buildName: redis-ha
+
+sonar:
+  qgName: redis-ha
+  projectName: redis-ha
+  blockerIssueThreshold: 50
+  coverageThreshold: 0
+  smellsCountThreshold: 5000
+  unitTestSuccessThreshold: 0
+
+jira:
+  projectName: res
+  assignee: ljohnson
+  components: Platform
+  product: VO
+  createVersionObject: false
+  description: "Helm chart for redis HA"
+
+stages:
+  verify:
+    syntax:
+      - helm template redis-ha -f charts/redis-ha/values.yaml > /dev/null
+  security:
+    branch: (?!x)x
+    sonarRegex: (?!x)x
+    owaspDependencyRegex: (?!x)x
+  publish:
+    artifact:
+      docker:
+        - build 8x8/redis-ha:v1.0.0 .
+        - push 8x8/redis-ha:v1.0.0
+      helm:
+        - push redis-ha
+  cd:
+    enabled: false
