@@ -50,7 +50,7 @@ serviceAccount:
 ## Recommend for externally exposed Redis clusters.
 ## ref: https://cbonte.github.io/haproxy-dconv/1.9/intro.html
 haproxy:
-  enabled: false
+  enabled: true
   # Enable if you want a dedicated port in haproxy for redis-slaves
   readOnly:
     enabled: false
@@ -138,6 +138,14 @@ haproxy:
 
   ## Override all other affinity settings for the haproxy pods with a string.
   affinity: |
+    nodeAffinity:
+     requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: app
+          operator: In
+          values:
+          - redis
 
   ## Custom config-haproxy.cfg files used to override default settings. If this file is
   ## specified then the config-haproxy.cfg above will be ignored.
@@ -166,8 +174,13 @@ rbac:
   create: true
 
 sysctlImage:
-  enabled: false
-  command: []
+  enabled: true
+  command:
+    - /bin/sh
+    - -xc
+    - |-
+      sysctl -w net.core.somaxconn=10000
+      echo never > /host-sys/kernel/mm/transparent_hugepage/enabled
   registry: docker.io
   repository: busybox
   tag: 1.31.1
@@ -183,7 +196,7 @@ sysctlImage:
 ## Redis specific configuration options
 redis:
   port: 6379
-  masterGroupName: "mymaster"       # must match ^[\\w-\\.]+$) and can be templated
+  masterGroupName: "redis-ha"       # must match ^[\\w-\\.]+$) and can be templated
 
   ## Configures redis with tls-port parameter
   # tlsPort: 6385
@@ -216,6 +229,7 @@ redis:
     repl-diskless-sync: "yes"
     rdbcompression: "yes"
     rdbchecksum: "yes"
+
 
   ## Custom redis.conf files used to override default settings. If this file is
   ## specified then the redis.config above will be ignored.
@@ -280,6 +294,7 @@ sentinel:
     parallel-syncs: 5
     maxclients: 10000
 
+
   ## Custom sentinel.conf files used to override default settings. If this file is
   ## specified then the sentinel.config above will be ignored.
   # customConfig: |-
@@ -316,15 +331,7 @@ hardAntiAffinity: true
 ## Additional affinities to add to the Redis server pods.
 ##
 ## Example:
-##   nodeAffinity:
-##     preferredDuringSchedulingIgnoredDuringExecution:
-##       - weight: 50
-##         preference:
-##           matchExpressions:
-##             - key: spot
-##               operator: NotIn
-##               values:
-##                 - "true"
+
 ##
 ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
 ##
@@ -333,14 +340,22 @@ additionalAffinities: {}
 ## Override all other affinity settings for the Redis server pods with a string.
 ##
 ## Example:
-## affinity: |
-##   podAntiAffinity:
-##     requiredDuringSchedulingIgnoredDuringExecution:
-##       - labelSelector:
-##           matchLabels:
-##             app: {{ template "redis-ha.name" . }}
-##             release: {{ .Release.Name }}
-##         topologyKey: kubernetes.io/hostname
+affinity: |
+  nodeAffinity:
+   requiredDuringSchedulingIgnoredDuringExecution:
+    nodeSelectorTerms:
+    - matchExpressions:
+      - key: app
+        operator: In
+        values:
+        - redis
+# podAntiAffinity:
+#   requiredDuringSchedulingIgnoredDuringExecution:
+#     - labelSelector:
+#         matchLabels:
+#           app: {{ template "redis-ha.name" . }}
+#           release: {{ .Release.Name }}
+#       topologyKey: kubernetes.io/hostname
 ##     preferredDuringSchedulingIgnoredDuringExecution:
 ##       - weight: 100
 ##         podAffinityTerm:
@@ -350,13 +365,12 @@ additionalAffinities: {}
 ##               release: {{ .Release.Name }}
 ##           topologyKey: failure-domain.beta.kubernetes.io/zone
 ##
-affinity: |
 
 # Prometheus exporter specific configuration options
 exporter:
   enabled: false
   image: oliver006/redis_exporter
-  tag: v1.15.1
+  tag: v1.13.1
   pullPolicy: IfNotPresent
 
   # prometheus port & scrape path
@@ -447,7 +461,7 @@ persistentVolume:
   ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
   ##   GKE, AWS & OpenStack)
   ##
-  # storageClass: "-"
+  storageClass: "oci"
   accessModes:
     - ReadWriteOnce
   size: 10Gi
@@ -482,7 +496,7 @@ tls:
   ## Name of Diffie-Hellman (DH) key exchange parameters file
   # dhParamsFile: redis.dh
   ## Name of CA certificate file
-  caCertFile: ca.crt
+#  caCertFile: ca.crt
 
 # restore init container is executed if restore.[s3|ssh].source is not false
 # restore init container creates /data/dump.rdb_ from original if exists
