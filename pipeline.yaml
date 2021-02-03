@@ -22,7 +22,7 @@ jira:
 stages:
   verify:
     syntax:
-      - helm template redis-ha -f charts/redis-ha/values.yaml > /dev/null
+      - helm template redis-ha -f redis-ha/values.yaml > /dev/null
   security:
     branch: (?!x)x
     sonarRegex: (?!x)x
