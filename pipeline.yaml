@@ -29,9 +29,6 @@ stages:
     owaspDependencyRegex: (?!x)x
   publish:
     artifact:
-      docker:
-        - build 8x8/redis-ha:v1.0.0 .
-        - push 8x8/redis-ha:v1.0.0
       helm:
         - push redis-ha
   cd:
