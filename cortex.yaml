@@ -1,0 +1,14 @@
+---
+openapi: 3.0.1
+info:
+  title: auto_k8s_helm_redis-ha
+  x-cortex-git:
+    github:
+      repository: 8x8/auto_k8s_helm_redis-ha
+  x-cortex-tag: auto_k8s_helm_redis-ha
+  x-cortex-link:
+  x-cortex-owners:
+    - type: EMAIL
+      email: res@8x8.com
+  x-cortex-service-groups:
+    - automation
